@@ -39,6 +39,11 @@ $statement->execute();
 
 // Fetch the row selected by primary key id.
 $row = $statement->fetch(PDO::FETCH_ASSOC);
+// Fetch all categories for the dropdown
+$cat_stmt = $db->prepare("SELECT * FROM category");
+$cat_stmt->execute();
+$categories = $cat_stmt->fetchAll();
+
 
 // Check if the query returned a result
 if (!$row) {
@@ -47,6 +52,7 @@ if (!$row) {
 
 // Handle form submission to update the product
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
     if (isset($_POST['delete'])) {
         // Delete the menu item and the associated image
         if ($row['image_path'] && file_exists($row['image_path'])) {
@@ -71,7 +77,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $new_description = filter_input(INPUT_POST, 'description', FILTER_SANITIZE_STRING);
         $new_price = filter_input(INPUT_POST, 'price', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
         $new_availability_status = filter_input(INPUT_POST, 'availability_status', FILTER_SANITIZE_STRING);
-        $new_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING); // Capture type from form
 
         // Handle the case where the image should be deleted
         if (isset($_POST['delete_image'])) {
@@ -110,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Update the menu item in the database
         $update_query = "UPDATE menu SET name = :name, description = :description, price = :price, 
-                         availability_status = :availability_status, image_path = :image_path, type = :type WHERE menu_item_id = :id";
+                         availability_status = :availability_status, image_path = :image_path, WHERE menu_item_id = :id";
         $update_stmt = $db->prepare($update_query);
 
         $update_stmt->bindValue(':name', $new_name, PDO::PARAM_STR);
@@ -118,7 +123,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $update_stmt->bindValue(':price', $new_price, PDO::PARAM_STR);
         $update_stmt->bindValue(':availability_status', $new_availability_status, PDO::PARAM_STR);
         $update_stmt->bindValue(':image_path', $new_image_path, PDO::PARAM_STR);
-        $update_stmt->bindValue(':type', $new_type, PDO::PARAM_STR); // Update the type
         $update_stmt->bindValue(':id', $id, PDO::PARAM_INT);
 
         if ($update_stmt->execute()) {
@@ -175,13 +179,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <option value="Available" <?= $row['availability_status'] == 'Available' ? 'selected' : '' ?>>Available</option>
             <option value="Unavailable" <?= $row['availability_status'] == 'Unavailable' ? 'selected' : '' ?>>Unavailable</option>
         </select>
-
-        <!-- Type Selection -->
-        <label for="type">Type</label>
-        <select name="type" id="type" required>
-            <option value="sweet" <?= $row['type'] == 'sweet' ? 'selected' : '' ?>>Sweet</option>
-            <option value="savory" <?= $row['type'] == 'savory' ? 'selected' : '' ?>>Savory</option>
-        </select><br>
 
         <!-- Image upload field -->
         <label for="image">Menu Item Image</label>

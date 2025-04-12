@@ -5,7 +5,9 @@ $availabilityFilter = isset($_GET['availability']) ? $_GET['availability'] : '';
 $sortOrder = isset($_GET['sort']) ? $_GET['sort'] : ''; // NEW LINE
 
 // Build base query and parameters
-$query = "SELECT * FROM menu";
+$query = "SELECT menu.*, category.foodtype 
+          FROM menu 
+          LEFT JOIN category ON menu.category_id = category.id";
 $params = [];
 $conditions = [];
 
@@ -38,12 +40,18 @@ if (empty($rows)) {
 }
 
 $name = $description = $price = $availability_status = "";
+$cat_stmt = $db->prepare("SELECT * FROM category");
+$cat_stmt->execute();
+$categories = $cat_stmt->fetchAll();
+
 if ($_POST && !empty($_POST['name']) && !empty($_POST['description']) && !empty($_POST['price']) && isset($_POST['availability_status'])) {
     // Sanitize and validate form inputs
     $name = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     $description = filter_input(INPUT_POST, 'description', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     $price = filter_input(INPUT_POST, 'price', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
     $availability_status = filter_input(INPUT_POST, 'availability_status', FILTER_SANITIZE_STRING);
+    $category_id = filter_input(INPUT_POST, 'category_id', FILTER_SANITIZE_NUMBER_INT);
+
     
     // Handle image upload
     $image_path = "";
@@ -66,14 +74,20 @@ if ($_POST && !empty($_POST['name']) && !empty($_POST['description']) && !empty(
     }
 
     // Prepare SQL to insert menu item into the database
-    $query = "INSERT INTO menu (name, description, price, availability_status, image_path) 
-              VALUES (:name, :description, :price, :availability_status, :image_path)";
+    $query = "INSERT INTO menu (name, description, price, availability_status, image_path, category_id) 
+          VALUES (:name, :description, :price, :availability_status, :image_path, :category_id)";
+
     $statement = $db->prepare($query);
     $statement->bindValue(':name', $name);
     $statement->bindValue(':description', $description);
     $statement->bindValue(':price', $price);
     $statement->bindValue(':availability_status', $availability_status);
     $statement->bindValue(':image_path', $image_path); // Store the image path
+    $statement->bindValue(':category_id', $category_id);
+
+    $cat_stmt = $db->prepare("SELECT * FROM category");
+    $cat_stmt->execute();
+    $categories = $cat_stmt->fetchAll();
 
     // Execute the query
     if ($statement->execute()) {
@@ -112,7 +126,7 @@ if ($_POST && !empty($_POST['name']) && !empty($_POST['description']) && !empty(
     </nav>
     
     <h1> Menu</h1>
-    <a href="post.php">Add menu item</a>
+    <a href="post.php">Add menu item</a> <br/>
     
     <form method="GET" action="products.php">
         <label for="availability-filter">Availability:</label>
@@ -140,6 +154,7 @@ if ($_POST && !empty($_POST['name']) && !empty($_POST['description']) && !empty(
                 <th>Description</th>
                 <th>Price</th>
                 <th>Availability</th>
+                <th>Category</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -153,6 +168,19 @@ if ($_POST && !empty($_POST['name']) && !empty($_POST['description']) && !empty(
                     <td><?= htmlspecialchars($row['description']) ?></td>
                     <td>$<?= number_format($row['price'], 2) ?></td>
                     <td><?= $row['availability_status'] === 'Available' ? 'YES' : 'NO'; ?></td>
+                    <td>
+                        <form method="post" action="update_category.php">
+                            <input type="hidden" name="menu_item_id" value="<?= $row['menu_item_id'] ?>">
+                            <select name="category_id" onchange="this.form.submit()">
+                                <?php foreach ($categories as $cat): ?>
+                                    <option value="<?= $cat['id'] ?>" <?= $row['category_id'] == $cat['id'] ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($cat['foodtype']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </form>
+                    </td>
+
                     <td>
                         <a href="edit.php?id=<?= $row['menu_item_id'] ?>">Edit</a> |
                         <a href="delete.php?id=<?= $row['menu_item_id'] ?>">Delete</a>

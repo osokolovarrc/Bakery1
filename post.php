@@ -1,6 +1,23 @@
 <?php
 require('connect.php'); // Include the connection file to the database
 
+if (isset($_POST['create_category'])) {
+    $new_category = filter_input(INPUT_POST, 'new_category', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    if (!empty($new_category)) {
+        $insert_cat = $db->prepare("INSERT INTO category (foodtype) VALUES (:foodtype)");
+        $insert_cat->bindValue(':foodtype', $new_category);
+        $insert_cat->execute();
+
+        // Optional: Get the last inserted ID to auto-select it later if you want
+        header("Location: post.php"); // Refresh to show updated dropdown
+        exit();
+    }
+}
+$cat_stmt = $db->prepare("SELECT * FROM category");
+$cat_stmt->execute();
+$categories = $cat_stmt->fetchAll();
+
+
 // File upload path function (unchanged)
 function file_upload_path($original_filename, $upload_subfolder_name = 'images') {
     $upload_subfolder_url = $upload_subfolder_name;
@@ -60,24 +77,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description = $_POST['description'];
     $price = $_POST['price'];
     $availability_status = $_POST['availability_status'];
-    $type = $_POST['type']; 
 
     // If no image was uploaded, set a default image path or NULL
     if (!$new_image_path) {
         $new_image_path = null; // Set this to null if no image is uploaded
     }
 
-    // Insert data into the database
-    $query = "INSERT INTO menu (name, description, price, availability_status, image_path, type) 
-              VALUES (:name, :description, :price, :availability_status, :image_path, :type)";
+    $category_id = filter_input(INPUT_POST, 'category_id', FILTER_SANITIZE_NUMBER_INT);
+
+    $query = "INSERT INTO menu (name, description, price, availability_status, image_path, category_id) 
+              VALUES (:name, :description, :price, :availability_status, :image_path, :category_id)";
     $statement = $db->prepare($query);
     $statement->execute([
         ':name' => $name,
         ':description' => $description,
         ':price' => $price,
         ':availability_status' => $availability_status,
-        ':image_path' => $new_image_path, // Store the relative path (or NULL if no image)
-        ':type' => $type // Store the selected type (sweet or savory)
+        ':image_path' => $new_image_path,
+        ':category_id' => $category_id
     ]);
 }
 ?>
@@ -127,17 +144,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <option value="Unavailable">Unavailable</option>
         </select><br>
 
-        <label for="type">Type:</label>
-        <select name="type" id="type" required>
-            <option value="sweet">Sweet</option>
-            <option value="savory">Savory</option>
-        </select><br>
-
         <label for="image">Menu Item Image (Optional):</label>
         <input type="file" id="image" name="image" accept="image/*"><br>
 
         <input type="submit" value="Add Menu Item">
     </form>
+    <hr>
+    <h3>Create New Category</h3>
+    <form action="post.php" method="POST">
+        <label for="new_category">New Category Name:</label>
+        <input type="text" id="new_category" name="new_category" required>
+        <button type="submit" name="create_category">Add Category</button>
+    </form>
+
 
     <!-- Display uploaded image only if the image exists and is valid -->
     <?php if (!empty($new_image_path) && file_exists($new_image_path)): ?>
