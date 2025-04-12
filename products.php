@@ -1,22 +1,36 @@
 <?php
 require('connect.php');
 
-// Capture type filter if provided in the URL
-$typeFilter = isset($_GET['type']) ? $_GET['type'] : '';
+$availabilityFilter = isset($_GET['availability']) ? $_GET['availability'] : '';
+$sortOrder = isset($_GET['sort']) ? $_GET['sort'] : ''; // NEW LINE
 
-// Modify query based on the filter (if provided)
-if ($typeFilter) {
-    // If a type filter is selected, filter the menu by that type and order by menu_item_id
-    $query = "SELECT * FROM menu WHERE type = :type ORDER BY menu_item_id DESC"; // Sort by menu_item_id
-    $statement = $db->prepare($query);
-    $statement->execute([':type' => $typeFilter]);
-} else {
-    // If no filter is applied, fetch all items ordered by menu_item_id
-    $query = "SELECT * FROM menu ORDER BY menu_item_id DESC"; // Sort by menu_item_id
-    $statement = $db->prepare($query);
-    $statement->execute();
+// Build base query and parameters
+$query = "SELECT * FROM menu";
+$params = [];
+$conditions = [];
+
+// Filtering by availability
+if ($availabilityFilter === 'Available' || $availabilityFilter === 'Unavailable') {
+    $conditions[] = "availability_status = :availability";
+    $params[':availability'] = $availabilityFilter;
 }
 
+// Add WHERE if there are conditions
+if (!empty($conditions)) {
+    $query .= " WHERE " . implode(' AND ', $conditions);
+}
+
+// Sorting
+if ($sortOrder === 'name_asc') {
+    $query .= " ORDER BY name ASC";
+} elseif ($sortOrder === 'name_desc') {
+    $query .= " ORDER BY name DESC";
+} else {
+    $query .= " ORDER BY menu_item_id DESC";
+}
+
+$statement = $db->prepare($query);
+$statement->execute($params);
 $rows = $statement->fetchAll();
 
 if (empty($rows)) {
@@ -100,15 +114,22 @@ if ($_POST && !empty($_POST['name']) && !empty($_POST['description']) && !empty(
     <h1> Menu</h1>
     <a href="post.php">Add menu item</a>
     
-    <!-- Filter for Menu Type -->
     <form method="GET" action="products.php">
-        <label for="type-filter">Filter by type:</label>
-        <select id="type-filter" name="type">
+        <label for="availability-filter">Availability:</label>
+        <select id="availability-filter" name="availability">
             <option value="">All</option>
-            <option value="sweet" <?php echo (isset($_GET['type']) && $_GET['type'] == 'sweet') ? 'selected' : ''; ?>>Sweet</option>
-            <option value="savory" <?php echo (isset($_GET['type']) && $_GET['type'] == 'savory') ? 'selected' : ''; ?>>Savory</option>
+            <option value="Available" <?php echo (isset($_GET['availability']) && $_GET['availability'] == 'Available') ? 'selected' : ''; ?>>Available</option>
+            <option value="Unavailable" <?php echo (isset($_GET['availability']) && $_GET['availability'] == 'Unavailable') ? 'selected' : ''; ?>>Unavailable</option>
         </select>
-        <button type="submit">Filter</button>
+
+        <label for="sort">Sort by:</label>
+        <select id="sort" name="sort">
+            <option value="">Default</option>
+            <option value="name_asc" <?php echo (isset($_GET['sort']) && $_GET['sort'] == 'name_asc') ? 'selected' : ''; ?>>Name (A-Z)</option>
+            <option value="name_desc" <?php echo (isset($_GET['sort']) && $_GET['sort'] == 'name_desc') ? 'selected' : ''; ?>>Name (Z-A)</option>
+        </select>
+
+        <button type="submit">Apply</button>
     </form>
 
     <table>
@@ -119,7 +140,6 @@ if ($_POST && !empty($_POST['name']) && !empty($_POST['description']) && !empty(
                 <th>Description</th>
                 <th>Price</th>
                 <th>Availability</th>
-                <th>Type</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -133,7 +153,6 @@ if ($_POST && !empty($_POST['name']) && !empty($_POST['description']) && !empty(
                     <td><?= htmlspecialchars($row['description']) ?></td>
                     <td>$<?= number_format($row['price'], 2) ?></td>
                     <td><?= $row['availability_status'] === 'Available' ? 'YES' : 'NO'; ?></td>
-                    <td><?= htmlspecialchars($row['type']) ?></td> <!-- Display the type of the item -->
                     <td>
                         <a href="edit.php?id=<?= $row['menu_item_id'] ?>">Edit</a> |
                         <a href="delete.php?id=<?= $row['menu_item_id'] ?>">Delete</a>
