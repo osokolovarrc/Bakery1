@@ -9,27 +9,54 @@ $category_stmt->execute();
 $categories = $category_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $category = isset($_GET['category']) ? $_GET['category'] : '';
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-if (!empty($category)) {
-    // Join category to get foodtype later (optional)
+
+if (!empty($category) && !empty($search)) {
     $query = "
         SELECT menu.*, category.foodtype 
         FROM menu
-        JOIN category ON menu.category_id = category.id
+        LEFT JOIN category ON menu.category_id = category.id
+        WHERE menu.category_id = :category
+        AND (menu.name LIKE :search OR menu.description LIKE :search)
+        ORDER BY menu_item_id DESC
+    ";
+    $statement = $db->prepare($query);
+    $statement->bindValue(':category', $category, PDO::PARAM_INT);
+    $statement->bindValue(':search', '%' . $search . '%', PDO::PARAM_STR);
+
+} elseif (!empty($category)) {
+    $query = "
+        SELECT menu.*, category.foodtype 
+        FROM menu
+        LEFT JOIN category ON menu.category_id = category.id
         WHERE menu.category_id = :category
         ORDER BY menu_item_id DESC
     ";
     $statement = $db->prepare($query);
     $statement->bindValue(':category', $category, PDO::PARAM_INT);
+
+} elseif (!empty($search)) {
+    $query = "
+        SELECT menu.*, category.foodtype 
+        FROM menu
+        LEFT JOIN category ON menu.category_id = category.id
+        WHERE menu.name LIKE :search OR menu.description LIKE :search
+        ORDER BY menu_item_id DESC
+    ";
+    $statement = $db->prepare($query);
+    $statement->bindValue(':search', '%' . $search . '%', PDO::PARAM_STR);
+
 } else {
     $query = "
         SELECT menu.*, category.foodtype 
         FROM menu
-        JOIN category ON menu.category_id = category.id
+        LEFT JOIN category ON menu.category_id = category.id
         ORDER BY menu_item_id DESC
     ";
     $statement = $db->prepare($query);
 }
+
 
 $statement->execute();
 $rows = $statement->fetchAll();
@@ -68,9 +95,12 @@ $isLoggedIn = isset($_SESSION['user_id']); // Assuming 'user_id' is stored in th
             </ul>
         </nav>
         <div class="search">
-            <input id="search-input" type="search" placeholder="Search..." >
-            <button>SEARCH</button>
-        </div>  
+            <form method="GET" action="menu.php">
+                <input type="text" name="search" placeholder="Search..." value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
+                <button type="submit">SEARCH</button>
+            </form>
+        </div>
+  
     </nav>
 
     <!-- Header for the Products page -->

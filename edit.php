@@ -115,7 +115,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Update the menu item in the database
         $update_query = "UPDATE menu SET name = :name, description = :description, price = :price, 
-                         availability_status = :availability_status, image_path = :image_path, WHERE menu_item_id = :id";
+                 availability_status = :availability_status, image_path = :image_path WHERE menu_item_id = :id";
+
         $update_stmt = $db->prepare($update_query);
 
         $update_stmt->bindValue(':name', $new_name, PDO::PARAM_STR);
