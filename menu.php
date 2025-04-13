@@ -10,6 +10,34 @@ $categories = $category_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $category = isset($_GET['category']) ? $_GET['category'] : '';
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+$results_per_page = 5; //  switch the value of N to a smaller or larger number
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($page - 1) * $results_per_page;
+
+$count_sql = "
+    SELECT COUNT(*) FROM menu
+    LEFT JOIN category ON menu.category_id = category.id
+    WHERE 1 = 1
+";
+
+$params = [];
+
+if (!empty($category)) {
+    $count_sql .= " AND menu.category_id = :category";
+    $params[':category'] = $category;
+}
+if (!empty($search)) {
+    $count_sql .= " AND (menu.name LIKE :search OR menu.description LIKE :search)";
+    $params[':search'] = '%' . $search . '%';
+}
+
+$count_stmt = $db->prepare($count_sql);
+foreach ($params as $key => $val) {
+    $count_stmt->bindValue($key, $val);
+}
+$count_stmt->execute();
+$total_results = $count_stmt->fetchColumn();
+$total_pages = ceil($total_results / $results_per_page);
 
 
 if (!empty($category) && !empty($search)) {
@@ -20,11 +48,14 @@ if (!empty($category) && !empty($search)) {
         WHERE menu.category_id = :category
         AND (menu.name LIKE :search OR menu.description LIKE :search)
         ORDER BY menu_item_id DESC
+        LIMIT :offset, :limit
     ";
+
     $statement = $db->prepare($query);
     $statement->bindValue(':category', $category, PDO::PARAM_INT);
     $statement->bindValue(':search', '%' . $search . '%', PDO::PARAM_STR);
-
+    $statement->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $statement->bindValue(':limit', $results_per_page, PDO::PARAM_INT);
 } elseif (!empty($category)) {
     $query = "
         SELECT menu.*, category.foodtype 
@@ -32,10 +63,13 @@ if (!empty($category) && !empty($search)) {
         LEFT JOIN category ON menu.category_id = category.id
         WHERE menu.category_id = :category
         ORDER BY menu_item_id DESC
+        LIMIT :offset, :limit
     ";
+
     $statement = $db->prepare($query);
     $statement->bindValue(':category', $category, PDO::PARAM_INT);
-
+    $statement->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $statement->bindValue(':limit', $results_per_page, PDO::PARAM_INT);
 } elseif (!empty($search)) {
     $query = "
         SELECT menu.*, category.foodtype 
@@ -43,9 +77,13 @@ if (!empty($category) && !empty($search)) {
         LEFT JOIN category ON menu.category_id = category.id
         WHERE menu.name LIKE :search OR menu.description LIKE :search
         ORDER BY menu_item_id DESC
+        LIMIT :offset, :limit
     ";
+
     $statement = $db->prepare($query);
     $statement->bindValue(':search', '%' . $search . '%', PDO::PARAM_STR);
+    $statement->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $statement->bindValue(':limit', $results_per_page, PDO::PARAM_INT);
 
 } else {
     $query = "
@@ -53,9 +91,14 @@ if (!empty($category) && !empty($search)) {
         FROM menu
         LEFT JOIN category ON menu.category_id = category.id
         ORDER BY menu_item_id DESC
+        LIMIT :offset, :limit
     ";
+
     $statement = $db->prepare($query);
+    $statement->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $statement->bindValue(':limit', $results_per_page, PDO::PARAM_INT);
 }
+
 
 
 $statement->execute();
@@ -75,7 +118,7 @@ $isLoggedIn = isset($_SESSION['user_id']); // Assuming 'user_id' is stored in th
 <html lang="en">
 <head>
     <title>Menu</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=1.0">
     <script src="script.js"></script>
 </head>
 <body>
@@ -141,6 +184,24 @@ $isLoggedIn = isset($_SESSION['user_id']); // Assuming 'user_id' is stored in th
             <?php endforeach; ?>
         <?php endif; ?>
     </section>
+    <?php if ($total_pages > 1): ?>
+    <div class="pagination">
+        <?php if ($page > 1): ?>
+            <a href="menu.php?page=<?= $page - 1 ?>&search=<?= urlencode($search) ?>&category=<?= urlencode($category) ?>">« Prev</a>
+        <?php endif; ?>
+
+        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+            <a href="menu.php?page=<?= $i ?>&search=<?= urlencode($search) ?>&category=<?= urlencode($category) ?>"
+               <?= $i == $page ? 'class="active"' : '' ?>>
+                <?= $i ?>
+            </a>
+        <?php endfor; ?>
+
+        <?php if ($page < $total_pages): ?>
+            <a href="menu.php?page=<?= $page + 1 ?>&search=<?= urlencode($search) ?>&category=<?= urlencode($category) ?>">Next »</a>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
 
 
     <!-- Footer -->
