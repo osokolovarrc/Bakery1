@@ -198,6 +198,24 @@ footer{
 	padding: 0;
 	font-size: 11px;
 }
+a.action-link {
+    display: inline-block;
+    padding: 5px 10px;
+    margin-right: 5px;
+    border-radius: 4px;
+    text-decoration: none;
+    color: white;
+    font-size: 14px;
+}
+
+a.delete {
+    background-color: #e74c3c;
+}
+
+a.hide {
+    background-color: #f39c12;
+}
+
 
 @media (max-width: 1200px) {
 	section#homepage{

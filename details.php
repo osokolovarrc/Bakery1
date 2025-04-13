@@ -1,36 +1,32 @@
 <?php
-// Ensure an ID is provided
-$id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+session_start();
+$_SESSION['is_admin'] = true;
 
+$id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 if (!$id) {
-    header("Location: menu.php"); // Redirect to the menu page if no valid ID
+    header("Location: menu.php");
     exit();
 }
 
 require('connect.php');
 
-// Build and prepare SQL String with :id placeholder parameter.
+// Get menu item
 $query = "SELECT * FROM menu WHERE menu_item_id = :id LIMIT 1";
 $statement = $db->prepare($query);
 $statement->bindValue(':id', $id, PDO::PARAM_INT);
 $statement->execute();
-
-// Fetch the row selected by primary key id.
 $row = $statement->fetch(PDO::FETCH_ASSOC);
 
-// Check if the query returned a result
 if (!$row) {
     die("Error: Menu item not found.");
 }
 
 // Handle comment submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['comment']) && isset($_POST['user_name'])) {
-    // Get the comment text and the user's name
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['comment'], $_POST['user_name'])) {
     $comment_text = trim($_POST['comment']);
     $user_name = trim($_POST['user_name']);
 
     if (!empty($comment_text) && !empty($user_name)) {
-        // Insert the comment into the database
         $insert_query = "INSERT INTO comment (menu_item_id, user_name, comment_text) VALUES (:menu_item_id, :user_name, :comment_text)";
         $insert_statement = $db->prepare($insert_query);
         $insert_statement->bindValue(':menu_item_id', $id, PDO::PARAM_INT);
@@ -40,8 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['comment']) && isset($
     } 
 }
 
-// Fetch comments for the current menu item
-$comments_query = "SELECT * FROM comment WHERE menu_item_id = :id ORDER BY created_at DESC";
+// Fetch visible comments only
+$comments_query = "SELECT * FROM comment WHERE menu_item_id = :id AND visible = 1 ORDER BY created_at DESC";
 $comments_statement = $db->prepare($comments_query);
 $comments_statement->bindValue(':id', $id, PDO::PARAM_INT);
 $comments_statement->execute();
@@ -58,7 +54,6 @@ $comments = $comments_statement->fetchAll(PDO::FETCH_ASSOC);
     <title>View Menu Item</title>
 </head>
 <body>
-    <!-- Main Navigation -->
     <nav id="navigation1" aria-label="Main Navigation">
         <img class="logo" src="images/croissant.png" alt="logo">
         <nav>
@@ -81,6 +76,7 @@ $comments = $comments_statement->fetchAll(PDO::FETCH_ASSOC);
         <p><strong>Description:</strong> <?= htmlspecialchars($row['description']) ?></p>
         <p><strong>Price:</strong> $<?= number_format($row['price'], 2) ?></p>
         <p><strong>Availability:</strong> <?= htmlspecialchars($row['availability_status']) ?></p>
+      
 
         <?php if ($row['image_path']): ?>
             <img src="<?= htmlspecialchars($row['image_path']) ?>" alt="Current Image" style="width: 300px;">
@@ -91,15 +87,8 @@ $comments = $comments_statement->fetchAll(PDO::FETCH_ASSOC);
 
     <h2>Comments</h2>
 
-    <!-- Display success/error message -->
-    <?php if (isset($success_message)): ?>
-        <p class="success"><?= $success_message ?></p>
-    <?php elseif (isset($error_message)): ?>
-        <p class="error"><?= $error_message ?></p>
-    <?php endif; ?>
-
     <!-- Comment form -->
-    <form action="" method="post">
+    <form method="post" action="">
         <label for="user_name">Your Name:</label>
         <input type="text" id="user_name" name="user_name" placeholder="Enter your name" required><br>
         <textarea name="comment" placeholder="Write your comment..." rows="4" cols="50" required></textarea><br>
@@ -113,7 +102,7 @@ $comments = $comments_statement->fetchAll(PDO::FETCH_ASSOC);
                 <li>
                     <p><strong><?= htmlspecialchars($comment['user_name']) ?> says:</strong></p>
                     <p><?= htmlspecialchars($comment['comment_text']) ?></p>
-                    <small>Posted on <?= $comment['created_at'] ?></small>
+                    <small>Posted on <?= htmlspecialchars($comment['created_at']) ?></small>
                 </li>
             <?php endforeach; ?>
         </ul>
