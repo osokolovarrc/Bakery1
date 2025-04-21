@@ -1,4 +1,9 @@
 <?php
+session_start();
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header('Location: login.php');
+    exit;
+}
 require('connect.php');
 
 $availabilityFilter = isset($_GET['availability']) ? $_GET['availability'] : '';
