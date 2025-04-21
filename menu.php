@@ -27,7 +27,7 @@ if (!empty($category)) {
     $params[':category'] = $category;
 }
 if (!empty($search)) {
-    $count_sql .= " AND (menu.name LIKE :search OR menu.description LIKE :search)";
+    $count_sql .= " AND menu.name LIKE :search";
     $params[':search'] = '%' . $search . '%';
 }
 
@@ -46,7 +46,7 @@ if (!empty($category) && !empty($search)) {
         FROM menu
         LEFT JOIN category ON menu.category_id = category.id
         WHERE menu.category_id = :category
-        AND (menu.name LIKE :search OR menu.description LIKE :search)
+        AND menu.name LIKE :search
         ORDER BY menu_item_id DESC
         LIMIT :offset, :limit
     ";
@@ -75,7 +75,7 @@ if (!empty($category) && !empty($search)) {
         SELECT menu.*, category.foodtype 
         FROM menu
         LEFT JOIN category ON menu.category_id = category.id
-        WHERE menu.name LIKE :search OR menu.description LIKE :search
+        WHERE menu.name LIKE :search
         ORDER BY menu_item_id DESC
         LIMIT :offset, :limit
     ";
