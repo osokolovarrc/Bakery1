@@ -157,14 +157,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <input type="submit" value="Add Menu Item">
     </form>
-    <hr>
-    <h3>Create New Category</h3>
-    <form action="post.php" method="POST">
-        <label for="new_category">New Category Name:</label>
-        <input type="text" id="new_category" name="new_category" required>
-        <button type="submit" name="create_category">Add Category</button>
-    </form>
-
 
     <!-- Display uploaded image only if the image exists and is valid -->
     <?php if (!empty($new_image_path) && file_exists($new_image_path)): ?>
