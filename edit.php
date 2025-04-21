@@ -9,6 +9,46 @@ if (!$id) {
 
 require('connect.php');
 
+$message = "";
+
+// Step 1: Fetch category to edit
+$category_id = filter_input(INPUT_GET, 'cat_id', FILTER_SANITIZE_NUMBER_INT);
+
+if ($category_id) {
+    $cat_stmt = $db->prepare("SELECT * FROM category WHERE id = :id");
+    $cat_stmt->bindValue(':id', $category_id, PDO::PARAM_INT);
+    $cat_stmt->execute();
+    $category = $cat_stmt->fetch();
+
+    if (!$category) {
+        $message = "Category not found.";
+    }
+} else {
+    $message = "Invalid category ID.";
+}
+
+// Step 2: Handle renaming submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rename_category'])) {
+    $updated_name = filter_input(INPUT_POST, 'updated_category_name', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+    if (!empty($updated_name) && $category_id) {
+        $update_stmt = $db->prepare("UPDATE category SET foodtype = :foodtype WHERE id = :id");
+        $update_stmt->bindValue(':foodtype', $updated_name);
+        $update_stmt->bindValue(':id', $category_id, PDO::PARAM_INT);
+
+        if ($update_stmt->execute()) {
+            $message = "Category renamed successfully!";
+            // Refresh to get updated name
+            header("Location: edit.php?id=" . $category_id);
+            exit();
+        } else {
+            $message = "Failed to update category.";
+        }
+    } else {
+        $message = "Please enter a new valid name.";
+    }
+}
+
 // File validation function (checks if the file is a valid image)
 function file_is_an_image($temporary_path, $new_path) {
     $allowed_mime_types = ['image/gif', 'image/jpeg', 'image/png'];
@@ -165,7 +205,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <h1>Edit Menu Item</h1>
 
-    <form method="post" action="edit.php?id=<?= $row['menu_item_id'] ?>" enctype="multipart/form-data">
+    <form method="post" action="edit.php?id=<?= $row['menu_item_id'] ?>&cat_id=<?= $category['id'] ?>" enctype="multipart/form-data">
+
         <label for="name">Name</label>
         <input type="text" id="name" name="name" value="<?= htmlspecialchars($row['name']) ?>" required>
 
@@ -190,6 +231,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label for="delete_image">Delete Image:</label>
             <input type="checkbox" id="delete_image" name="delete_image" value="1"><br>
         <?php endif; ?>
+
+        <label for="category_id">Category</label>
+        <select id="category_id" name="category_id" required>
+            <?php foreach ($categories as $cat): ?>
+                <option value="<?= $cat['id'] ?>" <?= $cat['id'] == $row['category_id'] ? 'selected' : '' ?>>
+                    <?= htmlspecialchars($cat['foodtype']) ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+
+        
 
         <button type="submit" name="submit">Update Menu Item</button>
         <button type="submit" name="delete" onclick="return confirm('Are you sure you want to delete this item?');">Delete</button>
