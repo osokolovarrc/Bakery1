@@ -132,7 +132,7 @@ if ($_POST && !empty($_POST['name']) && !empty($_POST['description']) && !empty(
     
     <h1> Menu</h1>
     <a href="post.php">Add menu item</a> <br/>
-    <a href="create_category.php">Create new category</a> <br/>
+    <a href="create_category.php">Create/Update category</a> <br/>
     
     <form method="GET" action="products.php">
         <label for="availability-filter">Availability:</label>

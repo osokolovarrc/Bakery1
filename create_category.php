@@ -40,6 +40,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_category'])) {
         <button type="submit" name="create_category">Add Category</button>
     </form>
 
-    <p><a href="post.php">Back to Add Menu Item</a></p>
+    <p><a href="post.php">Back to Menu</a></p>
 </body>
 </html>
