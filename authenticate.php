@@ -14,6 +14,7 @@ if (!isset($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW'])
     exit("Access Denied: Username and password required.");
 } else {
     $_SESSION['user_id'] = 'admin';
+    $_SESSION['username'] = 'wally';
     // If authentication passes, redirect to products.php
     header('Location: products.php');
     exit();

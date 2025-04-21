@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
             $insert->bindValue(':email', $email);
             $insert->bindValue(':password', $hashedPassword);
             if ($insert->execute()) {
-                $message = "Registration successful! You can now <a href='menu.php'>log in</a>.";
+                $message = "Registration successful! You can now <a href='login.php'>log in</a>.";
             } else {
                 $message = "An error occurred during registration.";
             }

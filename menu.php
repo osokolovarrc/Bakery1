@@ -111,7 +111,8 @@ if (empty($rows)) {
 }
 
 // Check if the user is logged in
-$isLoggedIn = isset($_SESSION['user_id']); // Assuming 'user_id' is stored in the session when logged in
+$isLoggedIn = isset($_SESSION['username']);
+ 
 ?>
 
 <!DOCTYPE html>
@@ -125,19 +126,23 @@ $isLoggedIn = isset($_SESSION['user_id']); // Assuming 'user_id' is stored in th
     <!-- Main Navigation -->
     <nav id="navigation1" aria-label="Main Navigation">
         <img class="logo" src="images/croissant.png" alt="logo">
-        <nav>
-            <ul class="list1">
-                <li><a href="index.php">HOME </a></li>
-                <li><a href="menu.php">PRODUCTS </a></li>
-                <li><a href="contact.php">CONTACT US</a></li>
-                <?php if ($isLoggedIn): ?>
-                    <li><a href="products.php">ADMIN</a></li> 
-                <?php else: ?>
-                    <li><a href="login.php">LOG IN</a></li> <!-- Login link if not logged in -->
+    <nav>
+        <ul class="list1">
+            <li><a href="index.php">HOME</a></li>
+            <li><a href="menu.php">PRODUCTS</a></li>
+            <li><a href="contact.php">CONTACT US</a></li>
+
+            <?php if (isset($_SESSION['username'])): ?>
+                <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                    <li><a href="products.php">ADMIN</a></li>
                 <?php endif; ?>
+                <li><a href="logout.php">LOGOUT</a></li>
+            <?php else: ?>
+                <li><a href="login.php">LOG IN</a></li>
                 <li><a href="register.php">SIGN UP</a></li>
-            </ul>
-        </nav>
+            <?php endif; ?>
+        </ul>
+    </nav>
         <div class="search">
             <form method="GET" action="menu.php">
                 <input type="text" name="search" placeholder="Search..." value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
@@ -146,6 +151,12 @@ $isLoggedIn = isset($_SESSION['user_id']); // Assuming 'user_id' is stored in th
         </div>
   
     </nav>
+    <?php if (isset($_SESSION['welcome_message'])): ?>
+        <div class="welcome-banner" style="text-align:center; color:green; font-size:20px; margin-top:20px;">
+            <?= htmlspecialchars($_SESSION['welcome_message']) ?>
+        </div>
+    <?php unset($_SESSION['welcome_message']); ?>
+    <?php endif; ?>
 
     <!-- Header for the Products page -->
     <header id="products">
