@@ -147,6 +147,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <label for="image">Menu Item Image (Optional):</label>
         <input type="file" id="image" name="image" accept="image/*"><br>
 
+        <label for="category_id">Category:</label>
+        <select id="category_id" name="category_id" required>
+            <option value="">-- Select a category --</option>
+            <?php foreach ($categories as $cat): ?>
+                <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['foodtype']) ?></option>
+            <?php endforeach; ?>
+        </select><br>
+
         <input type="submit" value="Add Menu Item">
     </form>
     <hr>
