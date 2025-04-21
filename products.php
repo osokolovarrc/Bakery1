@@ -27,9 +27,14 @@ if ($sortOrder === 'name_asc') {
     $query .= " ORDER BY name ASC";
 } elseif ($sortOrder === 'name_desc') {
     $query .= " ORDER BY name DESC";
+} elseif ($sortOrder === 'price_asc') {
+    $query .= " ORDER BY price ASC";
+} elseif ($sortOrder === 'price_desc') {
+    $query .= " ORDER BY price DESC";
 } else {
     $query .= " ORDER BY menu_item_id DESC";
 }
+
 
 $statement = $db->prepare($query);
 $statement->execute($params);
@@ -141,7 +146,10 @@ if ($_POST && !empty($_POST['name']) && !empty($_POST['description']) && !empty(
             <option value="">Default</option>
             <option value="name_asc" <?php echo (isset($_GET['sort']) && $_GET['sort'] == 'name_asc') ? 'selected' : ''; ?>>Name (A-Z)</option>
             <option value="name_desc" <?php echo (isset($_GET['sort']) && $_GET['sort'] == 'name_desc') ? 'selected' : ''; ?>>Name (Z-A)</option>
+            <option value="price_asc" <?php echo (isset($_GET['sort']) && $_GET['sort'] == 'price_asc') ? 'selected' : ''; ?>>Price (Low to High)</option>
+            <option value="price_desc" <?php echo (isset($_GET['sort']) && $_GET['sort'] == 'price_desc') ? 'selected' : ''; ?>>Price (High to Low)</option>
         </select>
+
 
         <button type="submit">Apply</button>
     </form>
