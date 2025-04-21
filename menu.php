@@ -135,6 +135,7 @@ $isLoggedIn = isset($_SESSION['user_id']); // Assuming 'user_id' is stored in th
                 <?php else: ?>
                     <li><a href="login.php">LOG IN</a></li> <!-- Login link if not logged in -->
                 <?php endif; ?>
+                <li><a href="register.php">SIGN UP</a></li>
             </ul>
         </nav>
         <div class="search">
