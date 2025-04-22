@@ -1,5 +1,6 @@
 <?php
 session_start();
+
 $_SESSION['is_admin'] = true;
 
 $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
@@ -22,9 +23,20 @@ if (!$row) {
 }
 
 // Handle comment submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['comment'], $_POST['user_name'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['comment'], $_POST['user_name'], $_POST['captcha'])) {
     $comment_text = trim($_POST['comment']);
     $user_name = trim($_POST['user_name']);
+    $user_captcha = trim($_POST['captcha']);
+    $stored_captcha = $_SESSION['captcha'] ?? '';
+
+    if (strcasecmp($user_captcha, $stored_captcha) !== 0) {
+    $_SESSION['captcha_error'] = "Incorrect CAPTCHA. Please try again.";
+    $_SESSION['form_user_name'] = $user_name;
+    $_SESSION['form_comment'] = $comment_text;
+    header("Location: " . $_SERVER['REQUEST_URI']); // Reload to repopulate form
+    exit();
+    }
+
 
     if (!empty($comment_text) && !empty($user_name)) {
         $insert_query = "INSERT INTO comment (menu_item_id, user_name, comment_text) VALUES (:menu_item_id, :user_name, :comment_text)";
@@ -33,7 +45,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['comment'], $_POST['us
         $insert_statement->bindValue(':user_name', $user_name, PDO::PARAM_STR);
         $insert_statement->bindValue(':comment_text', $comment_text, PDO::PARAM_STR);
         $insert_statement->execute();
-    } 
+
+        // Clear form data after successful submission
+        header("Location: " . $_SERVER['REQUEST_URI']);
+        exit();
+    }
 }
 
 // Fetch visible comments only
@@ -87,13 +103,32 @@ $comments = $comments_statement->fetchAll(PDO::FETCH_ASSOC);
 
     <h2>Comments</h2>
 
-    <!-- Comment form -->
+    <?php
+    $prev_user_name = $_SESSION['form_user_name'] ?? '';
+    $prev_comment = $_SESSION['form_comment'] ?? '';
+    unset($_SESSION['form_user_name'], $_SESSION['form_comment']);
+    $captcha_error = $_SESSION['captcha_error'] ?? '';
+    unset($_SESSION['captcha_error']);
+    ?>
+
     <form method="post" action="">
-        <label for="user_name">Your Name:</label>
-        <input type="text" id="user_name" name="user_name" placeholder="Enter your name" required><br>
-        <textarea name="comment" placeholder="Write your comment..." rows="4" cols="50" required></textarea><br>
+        <label for="user_name">Your Name:</label><br>
+        <input type="text" id="user_name" name="user_name" value="<?= htmlspecialchars($prev_user_name) ?>" required><br>
+
+        <label for="comment">Your Comment:</label><br>
+        <textarea name="comment" rows="4" cols="50" required><?= htmlspecialchars($prev_comment) ?></textarea><br>
+
+        <label for="captcha">Enter the text from the image:</label><br>
+        <img src="captcha.php" alt="CAPTCHA"><br>
+        <input type="text" id="captcha" name="captcha" required><br>
+
+        <?php if ($captcha_error): ?>
+            <p style="color: red;"><?= htmlspecialchars($captcha_error) ?></p>
+        <?php endif; ?>
+
         <button type="submit">Submit Comment</button>
     </form>
+
 
     <h3>Recent Comments</h3>
     <?php if ($comments): ?>
