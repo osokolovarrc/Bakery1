@@ -72,8 +72,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
 
         <button type="submit" name="register">Register</button>
     </form>
-
-
-    <p><a href="login.php">Already have an account? Log in here.</a></p>
 </body>
 </html>
